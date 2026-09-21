@@ -1,0 +1,332 @@
+{
+  "fetchedAt": "2026-09-21T04:16:36.561Z",
+  "transport": "cookie",
+  "functions": {
+    "core_course_get_enrolled_courses_by_timeline_classification": {
+      "name": "core_course_get_enrolled_courses_by_timeline_classification",
+      "component": "core_course",
+      "read": true,
+      "desc": "Your courses (dashboard timeline)",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_course_get_recent_courses": {
+      "name": "core_course_get_recent_courses",
+      "component": "core_course",
+      "read": true,
+      "desc": "Recently viewed courses",
+      "available": "yes"
+    },
+    "core_course_get_courses_by_field": {
+      "name": "core_course_get_courses_by_field",
+      "component": "core_course",
+      "read": true,
+      "desc": "Course info by field",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_course_search_courses": {
+      "name": "core_course_search_courses",
+      "component": "core_course",
+      "read": true,
+      "desc": "Search the course catalogue",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_courseformat_get_state": {
+      "name": "core_courseformat_get_state",
+      "component": "core_courseformat",
+      "read": true,
+      "desc": "Full course structure (sections + activities)",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_course_get_contents": {
+      "name": "core_course_get_contents",
+      "component": "core_course",
+      "read": true,
+      "desc": "Course contents (web-services only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_course_get_user_navigation_options": {
+      "name": "core_course_get_user_navigation_options",
+      "component": "core_course",
+      "read": true,
+      "desc": "Nav options per course",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_block_get_dashboard_blocks": {
+      "name": "core_block_get_dashboard_blocks",
+      "component": "core_block",
+      "read": true,
+      "desc": "Dashboard blocks",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "block_recentlyaccesseditems_get_recent_items": {
+      "name": "block_recentlyaccesseditems_get_recent_items",
+      "component": "block_recentlyaccesseditems",
+      "read": true,
+      "desc": "Recently accessed items",
+      "available": "yes"
+    },
+    "core_calendar_get_action_events_by_timesort": {
+      "name": "core_calendar_get_action_events_by_timesort",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "Upcoming action events / deadlines",
+      "available": "yes"
+    },
+    "core_calendar_get_action_events_by_courses": {
+      "name": "core_calendar_get_action_events_by_courses",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "Upcoming events grouped by course",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_calendar_get_calendar_monthly_view": {
+      "name": "core_calendar_get_calendar_monthly_view",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "Month calendar view",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_calendar_get_calendar_upcoming_view": {
+      "name": "core_calendar_get_calendar_upcoming_view",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "Upcoming calendar view",
+      "available": "yes"
+    },
+    "core_calendar_get_calendar_day_view": {
+      "name": "core_calendar_get_calendar_day_view",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "Day calendar view",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_calendar_get_calendar_event_by_id": {
+      "name": "core_calendar_get_calendar_event_by_id",
+      "component": "core_calendar",
+      "read": true,
+      "desc": "One calendar event",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_calendar_create_calendar_events": {
+      "name": "core_calendar_create_calendar_events",
+      "component": "core_calendar",
+      "read": false,
+      "desc": "Create a calendar event",
+      "available": "unprobed"
+    },
+    "core_calendar_delete_calendar_events": {
+      "name": "core_calendar_delete_calendar_events",
+      "component": "core_calendar",
+      "read": false,
+      "desc": "Delete calendar events",
+      "available": "unprobed"
+    },
+    "core_get_user_dates": {
+      "name": "core_get_user_dates",
+      "component": "core",
+      "read": true,
+      "desc": "Format timestamps to user dates",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_message_get_conversations": {
+      "name": "core_message_get_conversations",
+      "component": "core_message",
+      "read": true,
+      "desc": "Message conversations",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_message_get_conversation_messages": {
+      "name": "core_message_get_conversation_messages",
+      "component": "core_message",
+      "read": true,
+      "desc": "Messages in a conversation",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_message_get_unread_conversations_count": {
+      "name": "core_message_get_unread_conversations_count",
+      "component": "core_message",
+      "read": true,
+      "desc": "Unread conversation count",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_message_get_conversation_counts": {
+      "name": "core_message_get_conversation_counts",
+      "component": "core_message",
+      "read": true,
+      "desc": "Conversation counts",
+      "available": "yes"
+    },
+    "core_message_send_messages_to_conversation": {
+      "name": "core_message_send_messages_to_conversation",
+      "component": "core_message",
+      "read": false,
+      "desc": "Send a message to a conversation",
+      "available": "unprobed"
+    },
+    "core_message_send_instant_messages": {
+      "name": "core_message_send_instant_messages",
+      "component": "core_message",
+      "read": false,
+      "desc": "Send an instant message",
+      "available": "unprobed"
+    },
+    "core_message_mark_all_conversation_messages_as_read": {
+      "name": "core_message_mark_all_conversation_messages_as_read",
+      "component": "core_message",
+      "read": false,
+      "desc": "Mark conversation read",
+      "available": "unprobed"
+    },
+    "message_popup_get_popup_notifications": {
+      "name": "message_popup_get_popup_notifications",
+      "component": "message_popup",
+      "read": true,
+      "desc": "Notification bell items",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "message_popup_get_unread_popup_notification_count": {
+      "name": "message_popup_get_unread_popup_notification_count",
+      "component": "message_popup",
+      "read": true,
+      "desc": "Unread notification count",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_message_get_user_notification_preferences": {
+      "name": "core_message_get_user_notification_preferences",
+      "component": "core_message",
+      "read": true,
+      "desc": "Notification preferences",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "gradereport_overview_get_course_grades": {
+      "name": "gradereport_overview_get_course_grades",
+      "component": "gradereport_overview",
+      "read": true,
+      "desc": "Grade overview across courses (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "gradereport_user_get_grade_items": {
+      "name": "gradereport_user_get_grade_items",
+      "component": "gradereport_user",
+      "read": true,
+      "desc": "Grade items for a course (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "mod_assign_get_assignments": {
+      "name": "mod_assign_get_assignments",
+      "component": "mod_assign",
+      "read": true,
+      "desc": "Assignments per course (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "mod_assign_get_submission_status": {
+      "name": "mod_assign_get_submission_status",
+      "component": "mod_assign",
+      "read": true,
+      "desc": "Assignment submission status (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "mod_forum_get_forums_by_courses": {
+      "name": "mod_forum_get_forums_by_courses",
+      "component": "mod_forum",
+      "read": true,
+      "desc": "Forums in courses (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "mod_forum_get_forum_discussions": {
+      "name": "mod_forum_get_forum_discussions",
+      "component": "mod_forum",
+      "read": true,
+      "desc": "Forum discussions (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "mod_quiz_get_user_attempts": {
+      "name": "mod_quiz_get_user_attempts",
+      "component": "mod_quiz",
+      "read": true,
+      "desc": "Quiz attempts (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_completion_get_activities_completion_status": {
+      "name": "core_completion_get_activities_completion_status",
+      "component": "core_completion",
+      "read": true,
+      "desc": "Activity completion status (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_completion_update_activity_completion_status_manually": {
+      "name": "core_completion_update_activity_completion_status_manually",
+      "component": "core_completion",
+      "read": false,
+      "desc": "Toggle activity completion",
+      "available": "unprobed"
+    },
+    "core_user_get_users_by_field": {
+      "name": "core_user_get_users_by_field",
+      "component": "core_user",
+      "read": true,
+      "desc": "User info by field (WS only)",
+      "available": "yes",
+      "code": "invalidparameter"
+    },
+    "core_user_get_private_files_info": {
+      "name": "core_user_get_private_files_info",
+      "component": "core_user",
+      "read": true,
+      "desc": "Private files usage (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_files_get_files": {
+      "name": "core_files_get_files",
+      "component": "core_files",
+      "read": true,
+      "desc": "List files in a context (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_search_get_results": {
+      "name": "core_search_get_results",
+      "component": "core_search",
+      "read": true,
+      "desc": "Global search (WS only)",
+      "available": "no",
+      "code": "servicenotavailable"
+    },
+    "core_user_update_user_preferences": {
+      "name": "core_user_update_user_preferences",
+      "component": "core_user",
+      "read": false,
+      "desc": "Update user preferences",
+      "available": "unprobed"
+    }
+  },
+  "availableCount": 19,
+  "probed": true
+}

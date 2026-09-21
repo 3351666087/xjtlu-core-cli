@@ -1,0 +1,24 @@
+{
+  "name": "xjtlu-core-cli",
+  "version": "0.1.0",
+  "description": "Dynamic CLI for XJTLU Learning Mall Core (Moodle) — login once, drive every web-service function the site exposes.",
+  "bin": {
+    "lmc": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp src/catalog.json dist/catalog.json",
+    "watch": "tsc -w -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "private": true
+}
