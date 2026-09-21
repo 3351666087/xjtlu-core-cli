@@ -3,7 +3,8 @@ import { MoodleClient, WSError, AuthError } from "./moodle";
 import { Manifest, saveSession } from "./config";
 import { pickFunction } from "./discovery";
 import { emit, table, note, human } from "./output";
-import { parseForms, parseLinks, resolveFormValues, ParsedForm } from "./web";
+import { parseForms, parseLinks, resolveFormValues, ParsedForm, discoverFilepicker } from "./web";
+import * as pathmod from "path";
 
 export interface Ctx {
   client: MoodleClient;
@@ -474,6 +475,59 @@ export async function formCmd(
     ok
       ? `Submitted — HTTP ${res.status}${res.headers.get("location") ? " → " + res.headers.get("location") : ""}`
       : `HTTP ${res.status}${errs.length ? " — errors: " + errs.join("; ") : ""}`
+  );
+}
+
+// ---- upload a file into a Moodle draft area (for file submissions) ---------
+
+export async function uploadFile(
+  ctx: Ctx,
+  filePath: string,
+  opts: { page?: string; repo?: number; itemid?: number; context?: number } = {}
+): Promise<void> {
+  if (!fs.existsSync(filePath)) throw new WSError(`No such file: ${filePath}`);
+  // Default discovery page: the user's private files (has a filemanager, harmless).
+  const pageUrl = opts.page ? abs(ctx, opts.page) : ctx.client.baseUrl() + "/user/files.php";
+  const html = await ctx.client.htmlGet(pageUrl);
+  const fp = discoverFilepicker(html);
+  const sess = ctx.client.getSession();
+  const sesskey = sess?.sesskey || fp.sesskey;
+  const repo_id = opts.repo ?? fp.repoUpload;
+  const ctx_id = opts.context ?? fp.ctxId;
+  const itemid = opts.itemid ?? fp.itemid ?? Math.floor(Math.random() * 1e9);
+  if (!sesskey) throw new WSError("No sesskey available — run 'lmc login' again.");
+  if (repo_id == null || ctx_id == null) {
+    throw new WSError(
+      `Could not find the upload repository / context on ${pageUrl}. ` +
+        `Pass --repo <id> and --context <ctxid> (inspect the page with 'lmc page').`
+    );
+  }
+  const fields: Record<string, string> = {
+    sesskey: String(sesskey),
+    repo_id: String(repo_id),
+    itemid: String(itemid),
+    ctx_id: String(ctx_id),
+    savepath: "/",
+    title: pathmod.basename(filePath),
+    author: sess?.fullname || "",
+    overwrite: "1",
+  };
+  const res = await ctx.client.postMultipart(
+    "/repository/repository_ajax.php?action=upload",
+    fields,
+    [{ field: "repo_upload_file", path: filePath }]
+  );
+  let json: any;
+  try {
+    json = JSON.parse(res.text);
+  } catch {
+    throw new WSError(`Upload failed (HTTP ${res.status}): ${res.text.slice(0, 200)}`);
+  }
+  if (json.error) throw new WSError(`Upload rejected: ${json.error}`);
+  emit({ itemid, repo_id, ctx_id, file: json.file || json.url, result: json });
+  note(
+    `Uploaded ${pathmod.basename(filePath)} → draft itemid ${itemid} ` +
+      `(repo ${repo_id}, ctx ${ctx_id}). Submit the owning form with this itemid to attach it.`
   );
 }
 

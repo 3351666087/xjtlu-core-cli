@@ -110,6 +110,45 @@ export function parseLinks(html: string, baseUrl: string): PageLink[] {
   return out;
 }
 
+export interface FilepickerInfo {
+  sesskey?: string;
+  repoUpload?: number; // id of the "Upload a file" repository
+  ctxId?: number; // context id for the draft area
+  itemid?: number; // draft item id the form allocated
+}
+
+/**
+ * Best-effort discovery of the parameters needed to upload into a Moodle draft
+ * file area, scraped from a page that renders a filemanager/filepicker (e.g. an
+ * assignment submission page, or /user/files.php).
+ */
+export function discoverFilepicker(html: string): FilepickerInfo {
+  const info: FilepickerInfo = {};
+  const sk = html.match(/"sesskey":"([^"]+)"/);
+  if (sk) info.sesskey = sk[1];
+  // The "Upload a file" repo appears like:
+  //   "5":{"id":"5","name":"Upload a file","type":"upload",...}
+  // (id may be quoted, and can come before or after "type").
+  const repo =
+    html.match(/"id":"?(\d+)"?,"name":"[^"]*","type":"upload"/) ||
+    html.match(/"type":"upload"[^{}]*?"id":"?(\d+)"?/) ||
+    html.match(/"id":"?(\d+)"?[^{}]*?"type":"upload"/) ||
+    html.match(/"repo_id":"?(\d+)"?[^{}]*?"type":"upload"/);
+  if (repo) info.repoUpload = parseInt(repo[1], 10);
+  const ctx =
+    html.match(/"contextid":(\d+)/) ||
+    html.match(/"context":\{"id":(\d+)/) ||
+    html.match(/"ctx_id":(\d+)/) ||
+    html.match(/[?&]ctx_id=(\d+)/);
+  if (ctx) info.ctxId = parseInt(ctx[1], 10);
+  const item =
+    html.match(/"itemid":(\d+)/) ||
+    html.match(/name="[^"]*filemanager"[^>]*value="(\d+)"/) ||
+    html.match(/"client_id":"[^"]+","itemid":(\d+)/);
+  if (item) info.itemid = parseInt(item[1], 10);
+  return info;
+}
+
 /** Resolve a form's fields into a name→value map, applying overrides. */
 export function resolveFormValues(
   form: ParsedForm,

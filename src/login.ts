@@ -400,6 +400,50 @@ export async function browserLogin(
   return session;
 }
 
+/**
+ * Open a real browser already authenticated as the saved session — the escape
+ * hatch for JS-only / real-time widgets (live quizzes, H5P, BigBlueButton, JS
+ * drag-drop questions) that HTTP primitives can't replay. Injects the stored
+ * cookies into a fresh browser and navigates; keeps the window open until Ctrl-C.
+ */
+export async function authedBrowser(
+  cfg: SiteConfig,
+  session: Session,
+  wantedUrl: string,
+  opts: { browser?: BrowserName } = {}
+): Promise<void> {
+  const pw = loadPlaywright();
+  if (!pw) throw new Error("Playwright is not installed (npm install in the CLI dir).");
+  ensureChromium(pw);
+  const order = opts.browser && opts.browser !== "auto" ? [opts.browser] : ["chrome", "msedge", "chromium"];
+  let browser: any;
+  let lastErr: unknown;
+  for (const ch of order) {
+    try {
+      browser = await pw.chromium.launch({
+        channel: ch === "chromium" ? undefined : ch,
+        headless: false,
+        args: ["--no-first-run", "--no-default-browser-check"],
+      });
+      break;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (!browser) throw new Error("Could not launch a browser: " + String(lastErr));
+  const context = await browser.newContext({ userAgent: REAL_UA });
+  const cookies = (session.cookies || []).map((c) => ({ name: c.name, value: c.value, url: cfg.baseUrl }));
+  if (cookies.length) await context.addCookies(cookies as any);
+  const page = await context.newPage();
+  const url = wantedUrl.startsWith("http")
+    ? wantedUrl
+    : cfg.baseUrl + (wantedUrl.startsWith("/") ? "" : "/") + wantedUrl;
+  await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => {});
+  note("Authenticated browser open at: " + url);
+  note("It shares your lmc session (no re-login). Press Ctrl-C here to close it.");
+  await new Promise(() => {}); // keep the process (and window) alive until Ctrl-C
+}
+
 /** No-browser login: user pastes the captured `moodlemobile://token=…` URL. */
 export function pasteLogin(cfg: SiteConfig, pasted: string): Session {
   const dec = decodeTokenUrl(pasted, cfg);

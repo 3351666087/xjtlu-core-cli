@@ -16,6 +16,7 @@ import {
   tokenLogin,
   cookieHeaderLogin,
   fromBrowserLogin,
+  authedBrowser,
   fetchPublicConfig,
 } from "./login";
 import * as cmd from "./commands";
@@ -138,6 +139,9 @@ const USAGE = `lmc — XJTLU Learning Mall Core (Moodle) CLI
     lmc form <url> -f name=value ... [--file field=path] [--submit btn] [--dry-run]
                                            replay/submit any form (auto sesskey)
     lmc form <url> --n <i> | --match <text>   pick which form on the page
+    lmc upload <file> [--page <formurl>]   upload into a Moodle draft area →itemid
+    lmc browser [path] [--browser chrome]  open a REAL browser already logged in
+                                           (escape hatch for JS-only widgets)
 
   Globals: --json (machine output on stdout) · --debug · LMC_HOME, LMC_DEBUG`;
 
@@ -458,6 +462,29 @@ async function main(): Promise<number> {
       if (!url) throw new Error("Usage: lmc page <url> [--forms] [--links]");
       const ctx = await withManifest(buildClient());
       await cmd.pageIntrospect(ctx, url, { links: !!opts.links, forms: !!opts.forms });
+      return 0;
+    }
+
+    case "upload": {
+      const file = positionals[1];
+      if (!file) throw new Error("Usage: lmc upload <file> [--page <formurl>] [--repo <id>] [--context <ctxid>] [--itemid <n>]");
+      const ctx = await withManifest(buildClient());
+      await cmd.uploadFile(ctx, file, {
+        page: typeof opts.page === "string" ? opts.page : undefined,
+        repo: opts.repo != null && opts.repo !== true ? Number(opts.repo) : undefined,
+        context: opts.context != null && opts.context !== true ? Number(opts.context) : undefined,
+        itemid: opts.itemid != null && opts.itemid !== true ? Number(opts.itemid) : undefined,
+      });
+      return 0;
+    }
+
+    case "browser": {
+      const url = positionals[1] || "/my/";
+      const cfg = loadConfig();
+      const session = loadSession();
+      if (!session) throw new AuthError("Not logged in. Run: lmc login --from-browser");
+      const br = typeof opts.browser === "string" ? (opts.browser as any) : undefined;
+      await authedBrowser(cfg, session, url, { browser: br });
       return 0;
     }
 
