@@ -159,12 +159,23 @@ general primitives — they replay anything the UI does and stay current:
   Moodle forms the same way the browser does (assignment text, forum posts,
   settings, self-enrolment, quiz answers, …). `--dry-run` shows exactly what
   would be POSTed without sending; `--n <i>` / `--match <text>` pick the form.
+- **File submissions:** upload into a Moodle draft area, then submit the form:
+
+  ```bash
+  lmc upload ./cw1.pdf --page "/mod/assign/view.php?id=<cmid>&action=editsubmission"
+  # → prints the draft itemid; then submit the same page's form (its filemanager
+  #   hidden field already carries that itemid):
+  lmc form "/mod/assign/view.php?id=<cmid>&action=editsubmission" --submit submitbutton
+  ```
+
+  With no `--page`, `lmc upload` targets your private files' draft area (harmless
+  test target — nothing persists unless a form is submitted).
 - **Raw escape hatch:** `lmc api <METHOD> <path> -d '<json>' -q k=v` for anything
   else.
 - **Browser escape hatch:** for the rare JS-only / real-time widgets (live quiz
-  timers, H5P, BigBlueButton, JS drag-drop questions) that HTTP can't replay, the
-  same session works in a real browser — `lmc open <path>` (or reuse the cookies
-  in a browser).
+  timers, H5P, BigBlueButton, JS drag-drop questions) that HTTP can't replay,
+  `lmc browser <path>` opens a REAL browser with your saved session injected —
+  already logged in, no SSO — so you (or the user) can interact directly.
 
 > **Safety — writes are real.** `lmc form … ` (without `--dry-run`), `lmc call`
 > on a write function, and `lmc api POST/DELETE` perform real actions on the

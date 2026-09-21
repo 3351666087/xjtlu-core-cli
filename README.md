@@ -122,8 +122,14 @@ lmc call <fn> [-a k=v ...]            # any Moodle AJAX function (incl. writes)
 lmc page "<url>" [--forms] [--links]  # map every form + link on a page
 lmc form "<url>" --list               # list a form's fields + submit buttons
 lmc form "<url>" -f name=value ... [--file field=path] [--submit btn] [--dry-run]
+lmc upload ./file.pdf --page "<url>"  # upload into a Moodle draft area → itemid
 lmc api <METHOD> <path> [-d '<json>'] # raw authenticated request
+lmc browser "<path>"                  # a REAL browser with your session injected
 ```
+
+`lmc browser` is the escape hatch for JS-only / real-time widgets: it opens an
+actual browser already logged in (session cookies injected — no SSO), so anything
+the HTTP layer can't replay you can still drive by hand or with a browser agent.
 
 `lmc form` pulls in every hidden field and the `sesskey`, so it submits exactly
 like the browser (assignment submissions, forum posts, settings changes,
