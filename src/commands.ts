@@ -3,6 +3,7 @@ import { MoodleClient, WSError, AuthError } from "./moodle";
 import { Manifest, saveSession } from "./config";
 import { pickFunction } from "./discovery";
 import { emit, table, note, human } from "./output";
+import { parseForms, parseLinks, resolveFormValues, ParsedForm } from "./web";
 
 export interface Ctx {
   client: MoodleClient;
@@ -324,6 +325,156 @@ export async function download(ctx: Ctx, fileUrl: string, out?: string): Promise
   fs.writeFileSync(target, res.buf);
   note(`Saved ${target} (${res.buf.length} bytes, HTTP ${res.status})`);
   emit({ saved: target, status: res.status, bytes: res.buf.length, contentType: res.contentType });
+}
+
+// ---- page introspection: map every form + link on any page ----------------
+
+function abs(ctx: Ctx, url: string): string {
+  return url.startsWith("http")
+    ? url
+    : ctx.client.baseUrl() + (url.startsWith("/") ? "" : "/") + url;
+}
+function trunc(s: string, n = 60): string {
+  s = (s || "").replace(/\s+/g, " ");
+  return s.length > n ? s.slice(0, n) + "…" : s;
+}
+function extractErrors(html: string): string[] {
+  const out: string[] = [];
+  const re =
+    /class="[^"]*(?:alert-danger|invalid-feedback|felement[^"]*error|errormessage)[^"]*"[^>]*>([\s\S]*?)</gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) && out.length < 6) {
+    const t = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (t) out.push(t.slice(0, 120));
+  }
+  return out;
+}
+
+export async function pageIntrospect(
+  ctx: Ctx,
+  url: string,
+  opts: { links?: boolean; forms?: boolean } = {}
+): Promise<void> {
+  const target = abs(ctx, url);
+  const html = await ctx.client.htmlGet(target);
+  const forms = parseForms(html, target);
+  const links = parseLinks(html, target);
+  const showForms = opts.forms || !opts.links;
+  const showLinks = opts.links || !opts.forms;
+  const out: any = { url: target };
+  if (showForms)
+    out.forms = forms.map((f) => ({
+      index: f.index,
+      id: f.id,
+      method: f.method,
+      action: f.action,
+      fields: f.fields.map((x) => ({ name: x.name, type: x.type, value: trunc(x.value, 40) })),
+      submits: f.submits,
+    }));
+  if (showLinks) out.links = links;
+  emit(out);
+  if (showForms) {
+    note(`FORMS (${forms.length}):`);
+    for (const f of forms) {
+      note(`  [#${f.index}] ${f.method} ${f.action}${f.id ? " (id=" + f.id + ")" : ""}`);
+      note(`      fields: ${f.fields.map((x) => x.name + ":" + x.type).join(", ") || "(none)"}`);
+      if (f.submits.length)
+        note(`      submit: ${f.submits.map((s) => s.name + "=" + s.value).join("  |  ")}`);
+    }
+  }
+  if (showLinks) {
+    table(links.slice(0, 60).map((l) => ({ text: l.text, href: l.href })), ["text", "href"]);
+    human(`${links.length} link(s).`);
+  }
+}
+
+// ---- generic form replay: drive ANY Moodle form (the master key) -----------
+
+export async function formCmd(
+  ctx: Ctx,
+  url: string,
+  opts: {
+    n?: number;
+    match?: string;
+    list?: boolean;
+    dryRun?: boolean;
+    fields: Record<string, string>;
+    files: { field: string; path: string }[];
+    submit?: string;
+  }
+): Promise<void> {
+  const target = abs(ctx, url);
+  const html = await ctx.client.htmlGet(target);
+  const forms = parseForms(html, target);
+  if (!forms.length) throw new WSError(`No <form> found on ${target}`);
+  let form: ParsedForm | undefined;
+  if (opts.n != null) form = forms[opts.n];
+  else if (opts.match)
+    form = forms.find(
+      (f) =>
+        (f.id || "").includes(opts.match!) ||
+        f.action.includes(opts.match!) ||
+        (f.name || "").includes(opts.match!)
+    );
+  else form = forms.length === 1 ? forms[0] : forms.find((f) => f.method === "POST") || forms[0];
+  if (!form)
+    throw new WSError(
+      `No matching form (page has ${forms.length}). Use --n <i> or --match <text>, ` +
+        `or inspect with: lmc page ${target}`
+    );
+
+  if (opts.list) {
+    emit(form);
+    note(`Form #${form.index}: ${form.method} ${form.action}`);
+    table(
+      form.fields.map((f) => ({
+        name: f.name,
+        type: f.type,
+        value: trunc(f.value, 40),
+        options: (f.options || []).map((o) => o.value).slice(0, 6).join("|"),
+      })),
+      ["name", "type", "value", "options"]
+    );
+    note("submit buttons: " + (form.submits.map((s) => s.name + "=" + s.value).join("  |  ") || "(none)"));
+    return;
+  }
+
+  const sess = ctx.client.getSession();
+  const values = resolveFormValues(form, opts.fields, opts.submit);
+  if (!("sesskey" in values) && sess?.sesskey) values.sesskey = sess.sesskey;
+
+  if (opts.dryRun) {
+    emit({ action: form.action, method: form.method, values, files: opts.files });
+    note(
+      `DRY RUN — would ${form.method} to ${form.action} with ${Object.keys(values).length} field(s)` +
+        (opts.files.length ? ` + ${opts.files.length} file(s)` : "")
+    );
+    table(
+      Object.entries(values).map(([k, v]) => ({ field: k, value: trunc(String(v), 50) })),
+      ["field", "value"]
+    );
+    return;
+  }
+
+  let res;
+  if (form.method === "GET") {
+    res = await ctx.client.raw("GET", form.action, { query: values });
+  } else if (opts.files.length) {
+    res = await ctx.client.postMultipart(form.action, values, opts.files);
+  } else {
+    res = await ctx.client.raw("POST", form.action, {
+      body: new URLSearchParams(values),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+  }
+  const errs = extractErrors(res.text);
+  const ok = res.status < 400 && !errs.length;
+  emit({ status: res.status, ok, location: res.headers.get("location") || undefined, errors: errs });
+  note(
+    ok
+      ? `Submitted — HTTP ${res.status}${res.headers.get("location") ? " → " + res.headers.get("location") : ""}`
+      : `HTTP ${res.status}${errs.length ? " — errors: " + errs.join("; ") : ""}`
+  );
 }
 
 // ---- open a site page in a real browser -----------------------------------

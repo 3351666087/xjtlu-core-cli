@@ -110,6 +110,36 @@ lmc api GET /grade/report/overview/index.php     # any page, cookie-authenticate
 Add `--json` to any command for machine-readable output on stdout (human tables
 go to stderr, so pipes stay clean).
 
+## Full control (the design goal)
+
+The aim is **functional parity with the web UI**, not a fixed menu of features.
+Your session cookie carries the same authority as your logged-in browser, so
+`lmc` exposes general primitives that can replay *any* action instead of
+hard-coding one command per button:
+
+```bash
+lmc call <fn> [-a k=v ...]            # any Moodle AJAX function (incl. writes)
+lmc page "<url>" [--forms] [--links]  # map every form + link on a page
+lmc form "<url>" --list               # list a form's fields + submit buttons
+lmc form "<url>" -f name=value ... [--file field=path] [--submit btn] [--dry-run]
+lmc api <METHOD> <path> [-d '<json>'] # raw authenticated request
+```
+
+`lmc form` pulls in every hidden field and the `sesskey`, so it submits exactly
+like the browser (assignment submissions, forum posts, settings changes,
+self-enrolment, …). `--dry-run` shows the payload without sending it.
+
+**Honest ceiling.** Everything the server accepts over HTTP is reachable this way
+— the large majority of Moodle. The exceptions are purely client-side / real-time
+widgets (live quiz timers, H5P interactions, BigBlueButton rooms, some JS
+drag-and-drop question types); for those the *same session* can be driven in a
+real browser. So "100% control" = full HTTP action parity plus a real-browser
+escape hatch for the JS-only remainder.
+
+> ⚠️ **Writes are real.** `lmc form` (without `--dry-run`), write-type `lmc call`,
+> and `lmc api POST/DELETE` perform real actions on your account. Use `--dry-run`
+> / `--list` first, and be deliberate with anything irreversible or public.
+
 ## Security & privacy
 
 - Your session cookie is stored **only** in `~/.config/xjtlu-core/session.json`

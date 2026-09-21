@@ -137,7 +137,43 @@ lmc api GET /mod/assign/view.php -q id=<cmid>
 lmc api GET /calendar/export.php -q ...
 ```
 
-## 5. Debugging
+## 5. Full control — drive ANY action (the path to 100%)
+
+The session cookie carries the **same authority as the logged-in browser**, so any
+action is reachable. Rather than hard-coding a command per feature, use these
+general primitives — they replay anything the UI does and stay current:
+
+- **AJAX actions (incl. writes):** `lmc call <fn> …` reaches every AJAX external
+  function — completion toggles, favourites, calendar events, messages, prefs, …
+- **Any form (the master key):** map a page, then replay its form:
+
+  ```bash
+  lmc page "/course/view.php?id=601" --links   # every actionable link on a page
+  lmc page "/mod/assign/view.php?id=<cmid>"    # every form + field
+  lmc form "/user/edit.php" --list             # show a form's fields + buttons
+  lmc form "/user/edit.php" -f department="CS" --submit submitbutton --dry-run
+  lmc form "<url>" -f field=value ... --file attachment=./f.pdf --submit save
+  ```
+
+  `lmc form` auto-includes every hidden field and the `sesskey`, so it submits
+  Moodle forms the same way the browser does (assignment text, forum posts,
+  settings, self-enrolment, quiz answers, …). `--dry-run` shows exactly what
+  would be POSTed without sending; `--n <i>` / `--match <text>` pick the form.
+- **Raw escape hatch:** `lmc api <METHOD> <path> -d '<json>' -q k=v` for anything
+  else.
+- **Browser escape hatch:** for the rare JS-only / real-time widgets (live quiz
+  timers, H5P, BigBlueButton, JS drag-drop questions) that HTTP can't replay, the
+  same session works in a real browser — `lmc open <path>` (or reuse the cookies
+  in a browser).
+
+> **Safety — writes are real.** `lmc form … ` (without `--dry-run`), `lmc call`
+> on a write function, and `lmc api POST/DELETE` perform real actions on the
+> user's account (submitting work, posting publicly, changing settings, deleting).
+> An agent MUST confirm the specific action with the user first, and prefer
+> `--dry-run` / `--list` to show what will happen. Irreversible or outward-facing
+> actions (submit, post, delete, pay) always need explicit consent.
+
+## 6. Debugging
 
 - `lmc status --json` → `valid:false` means the session expired → re-login.
 - `LMC_DEBUG=1 lmc <cmd>` prints the underlying HTTP requests.

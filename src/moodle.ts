@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import { SiteConfig, Session, saveSession } from "./config";
 import { debug } from "./output";
 
@@ -172,6 +174,31 @@ export class MoodleClient {
       body: opts.body,
       redirect: opts.redirect || "follow",
     });
+    const text = await res.text();
+    return { status: res.status, headers: res.headers, text };
+  }
+
+  /** Multipart POST (form fields + files) with the session cookie. */
+  async postMultipart(
+    action: string,
+    fields: Record<string, string>,
+    files: { field: string; path: string }[] = []
+  ): Promise<RawResponse> {
+    maybeInstallProxy();
+    const url = /^https?:\/\//.test(action)
+      ? action
+      : this.cfg.baseUrl + (action.startsWith("/") ? "" : "/") + action;
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+    for (const f of files) {
+      const buf = fs.readFileSync(f.path);
+      fd.append(f.field, new Blob([buf]), path.basename(f.path));
+    }
+    const headers: Record<string, string> = {};
+    const ch = this.cookieHeader();
+    if (ch) headers["Cookie"] = ch;
+    debug("HTTP POST(multipart)", url);
+    const res = await fetch(url, { method: "POST", headers, body: fd, redirect: "follow" });
     const text = await res.text();
     return { status: res.status, headers: res.headers, text };
   }

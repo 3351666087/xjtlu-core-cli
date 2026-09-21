@@ -31,7 +31,7 @@ interface Parsed {
 function parseArgs(argv: string[]): Parsed {
   const positionals: string[] = [];
   const opts: Record<string, string | boolean | string[]> = {};
-  const repeatable = new Set(["a", "arg", "q", "query"]);
+  const repeatable = new Set(["a", "arg", "q", "query", "f", "field", "file"]);
   for (let i = 0; i < argv.length; i++) {
     const tok = argv[i];
     if (tok === "--") {
@@ -42,7 +42,10 @@ function parseArgs(argv: string[]): Parsed {
     if (tok.startsWith("--")) key = tok.slice(2);
     else if (tok.startsWith("-") && tok.length > 1) key = tok.slice(1);
     if (key) {
-      const boolean = ["json", "cookie", "debug", "force", "verified", "help"].includes(key);
+      const boolean = [
+        "json", "cookie", "debug", "force", "verified", "help",
+        "list", "dry-run", "links", "forms", "available",
+      ].includes(key);
       let val: string | boolean = true;
       if (!boolean && i + 1 < argv.length && !argv[i + 1].startsWith("-")) {
         val = argv[++i];
@@ -126,8 +129,15 @@ const USAGE = `lmc — XJTLU Learning Mall Core (Moodle) CLI
     lmc open [path]                    open a site page in your browser
 
   Generic access (anything the site exposes, now or in future):
-    lmc call <function> [--args '<json>'] [-a key=value ...] [--json]
-    lmc api <METHOD> <path> [-d '<json>'] [-q key=value ...] [--json]
+    lmc call <function> [--args '<json>'] [-a key=value ...] [--json]   any AJAX fn
+    lmc api <METHOD> <path> [-d '<json>'] [-q key=value ...] [--json]   raw request
+
+  Full control — drive ANY button/form like the browser does:
+    lmc page <url> [--forms] [--links]     map every form + link on a page
+    lmc form <url> --list                  show a form's fields + submit buttons
+    lmc form <url> -f name=value ... [--file field=path] [--submit btn] [--dry-run]
+                                           replay/submit any form (auto sesskey)
+    lmc form <url> --n <i> | --match <text>   pick which form on the page
 
   Globals: --json (machine output on stdout) · --debug · LMC_HOME, LMC_DEBUG`;
 
@@ -440,6 +450,44 @@ async function main(): Promise<number> {
       const p = positionals[1] || "/my/";
       const ctx = await withManifest(buildClient());
       await cmd.open(ctx, p);
+      return 0;
+    }
+
+    case "page": {
+      const url = positionals[1];
+      if (!url) throw new Error("Usage: lmc page <url> [--forms] [--links]");
+      const ctx = await withManifest(buildClient());
+      await cmd.pageIntrospect(ctx, url, { links: !!opts.links, forms: !!opts.forms });
+      return 0;
+    }
+
+    case "form": {
+      const url = positionals[1];
+      if (!url)
+        throw new Error(
+          "Usage: lmc form <url> [--list] [-f key=value ...] [--file field=path ...] " +
+            "[--submit name] [--dry-run] [--n <i> | --match <text>]"
+        );
+      const fPairs = ([] as string[]).concat((opts.f as string[]) || [], (opts.field as string[]) || []);
+      const fields: Record<string, string> = {};
+      for (const p of fPairs) {
+        const i = p.indexOf("=");
+        if (i >= 0) fields[p.slice(0, i)] = p.slice(i + 1);
+      }
+      const files = (((opts.file as string[]) || []) as string[]).map((p) => {
+        const i = p.indexOf("=");
+        return { field: p.slice(0, i), path: p.slice(i + 1) };
+      });
+      const ctx = await withManifest(buildClient());
+      await cmd.formCmd(ctx, url, {
+        n: opts.n != null && opts.n !== true ? Number(opts.n) : undefined,
+        match: typeof opts.match === "string" ? opts.match : undefined,
+        list: !!opts.list,
+        dryRun: !!opts["dry-run"],
+        fields,
+        files,
+        submit: typeof opts.submit === "string" ? opts.submit : undefined,
+      });
       return 0;
     }
 
